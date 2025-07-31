@@ -575,7 +575,7 @@ export default function NetworkMap() {
   whenReady={({ target }: { target: L.Map }) => {
     mapRef.current = target;
   }}
-  center={center}
+  center={mapCenter}
   zoom={13}
   scrollWheelZoom={true}
   style={{
@@ -594,6 +594,13 @@ export default function NetworkMap() {
                   attribution='&copy; <a href="https://osm.org/copyright">OpenStreetMap</a> contributors'
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
+
+                 {/* Add user location marker here */}
+  <Marker position={mapCenter}>
+    <Popup>You are here</Popup>
+  </Marker>
+
+
                 <Marker position={center}>
                   <Popup>
                     Example Device
