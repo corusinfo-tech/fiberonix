@@ -22,8 +22,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Search, MoreVertical, Users } from "lucide-react";
-import { fetchAllCustomers, fetchOffices } from "@/services/api";
+
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  Polyline,
+} from "react-leaflet";
+
+import { X } from "lucide-react";
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Cpu,
+  Router,
+  Activity,
+} from "lucide-react";
 import {
   Popover,
   PopoverTrigger,
@@ -37,25 +53,17 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  Polyline,
-} from "react-leaflet";
-
-import { X } from "lucide-react";
 import { Label } from "@/components/ui/label";
+
 import {
   fetchJunctions,
+  fetchOffices,
   fetchDevices,
   fetchCustomers,
   fetchRoutesByOffice,
 } from "@/services/api";
-import { deleteCustomer } from "@/services/api";
-import { updateCustomer } from "@/services/api";
+import { deleteJunction } from "@/services/api";
+import { updateJunction } from "@/services/api";
 import toast, { Toaster } from "react-hot-toast";
 
 import L from "leaflet";
@@ -130,48 +138,49 @@ const oltIcon = L.icon({
   iconAnchor: [14, 28],
 });
 
-
-export default function Customers() {
-  const [customers, setCustomers] = useState([]);
+export default function Junctions() {
+  const [junctions, setJunctions] = useState([]);
   const [offices, setOffices] = useState([]);
   const [selectedOffice, setSelectedOffice] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
 
-   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [mapData, setMapData] = useState(null);
   const [officeLocation, setOfficeLocation] = useState(null);
-  const [relatedCustomers, setRelatedCustomers] = useState([]);
+  const [relatedJunctions, setRelatedJunctions] = useState([]);
   const [relatedDevices, setRelatedDevices] = useState([]);
-  const [junctions, setJunctions] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [routes, setRoutes] = useState([]);
 
   const [isViewOpen, setIsViewOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
+
   const [loading, setLoading] = useState(true);
 
-  // Pagination
+  // Pagination state
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [filteredCustomers, setFilteredCustomers] = useState([]);
-
-  const openEditModal = (customer) => {
-    setEditData({ ...customer }); // Pre-fill data
-    setIsEditOpen(true);
-  };
-
-  const openViewModal = (customer) => {
-    setViewData(customer);
+  const openViewModal = (junction) => {
+    setViewData(junction);
     setIsViewOpen(true);
   };
 
-  const openMapModal = async (customer) => {
-    setMapData(customer);
+  // Derived data
+  const [filteredJunctions, setFilteredJunctions] = useState([]);
+
+  const openEditModal = (junction) => {
+    setEditData({ ...junction }); // Pre-fill data
+    setIsEditOpen(true);
+  };
+
+  const openMapModal = async (junction) => {
+    setMapData(junction);
 
     // Find office details
-    const office = offices.find((o) => o.id === customer.office);
+    const office = offices.find((o) => o.id === junction.office);
     if (office) {
       setOfficeLocation({
         id: office.id,
@@ -183,17 +192,17 @@ export default function Customers() {
       setOfficeLocation(null);
     }
 
-    // Get other customers in the same office
-    const officeCustomers = customers.filter(
-      (c) => c.office === customer.office && c.id !== customer.id
+    // Get other junctions in the same office
+    const officeJunctions = junctions.filter(
+      (j) => j.office === junction.office && j.id !== junction.id
     );
-    setRelatedCustomers(officeCustomers);
+    setRelatedJunctions(officeJunctions);
 
     // Fetch devices
     try {
       const devicesData = await fetchDevices();
       const filteredDevices = devicesData.results.filter(
-        (d) => d.office === customer.office
+        (d) => d.office === junction.office
       );
       setRelatedDevices(filteredDevices);
     } catch (error) {
@@ -201,22 +210,18 @@ export default function Customers() {
       setRelatedDevices([]);
     }
 
-    // Fetch junctions
+    // Fetch customers
     try {
-      const junctionsData = await fetchJunctions();
-      const filteredJunctions = (junctionsData || []).filter(
-        (j) => j.office === customer.office
-      );
-      setJunctions(filteredJunctions);
+      const customersData = await fetchCustomers(junction.office);
+      setCustomers(customersData || []);
     } catch (error) {
-      console.error("Failed to fetch junctions:", error);
-      setJunctions([]);
+      console.error("Failed to fetch customers:", error);
+      setCustomers([]);
     }
-    
 
     // Fetch routes
     try {
-      const routesData = await fetchRoutesByOffice(customer.office);
+      const routesData = await fetchRoutesByOffice(junction.office);
       setRoutes(routesData || []);
     } catch (error) {
       console.error("Failed to fetch routes:", error);
@@ -225,20 +230,27 @@ export default function Customers() {
 
     setIsMapOpen(true);
   };
-  
 
   useEffect(() => {
     const getData = async () => {
       try {
         setLoading(true);
-        const [customerRes, officeRes] = await Promise.all([
-          fetchAllCustomers(),
+        const [junctionRes, officeRes] = await Promise.all([
+          fetchJunctions(),
           fetchOffices(),
         ]);
-        setCustomers(customerRes || []);
-        setOffices(officeRes || []);
+        console.log("Junction API response:", junctionRes);
+        console.log("Office API response:", officeRes);
+
+        // Handle array or object with results
+        setJunctions(
+          Array.isArray(junctionRes) ? junctionRes : junctionRes.results || []
+        );
+        setOffices(
+          Array.isArray(officeRes) ? officeRes : officeRes.results || []
+        );
       } catch (error) {
-        console.error("Error fetching customers:", error);
+        console.error("Error fetching data:", error.response || error);
       } finally {
         setLoading(false);
       }
@@ -246,50 +258,64 @@ export default function Customers() {
     getData();
   }, []);
 
-  // Filtering
+  // Filter when office changes
   useEffect(() => {
-    let filtered = customers;
+    let filtered = junctions;
 
+    // Filter by office
     if (selectedOffice !== "all") {
-      filtered = filtered.filter((c) => c.office === parseInt(selectedOffice));
+      filtered = filtered.filter((d) => d.office === parseInt(selectedOffice));
     }
 
+    // Filter by search term
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (c) =>
-          c.name?.toLowerCase().includes(term) ||
-          c.email?.toLowerCase().includes(term) ||
-          c.phone?.toLowerCase().includes(term) ||
-          c.address?.toLowerCase().includes(term)
+        (j) =>
+          j.name?.toLowerCase().includes(term) ||
+          j.junction_type?.toLowerCase().includes(term) ||
+          j.post_code?.toLowerCase().includes(term) ||
+          j.description?.toLowerCase().includes(term)
       );
     }
 
-    setFilteredCustomers(filtered);
-    setPage(1);
-  }, [selectedOffice, searchTerm, customers]);
+    setFilteredJunctions(filtered);
+    setPage(1); // Reset to first page on filter change
+  }, [selectedOffice, searchTerm, junctions]);
 
-  // Pagination
-  const paginatedCustomers = filteredCustomers.slice(
+  // Slice for current page
+  const paginatedJunctions = filteredJunctions.slice(
     (page - 1) * pageSize,
     page * pageSize
   );
-  const totalPages = Math.ceil(filteredCustomers.length / pageSize);
+  const totalPages = Math.ceil(filteredJunctions.length / pageSize);
 
-  const getOfficeName = (officeId) => {
+  //   const getJunctionIcon = (type: string) => {
+  //     switch (type) {
+  //       case "Splitter":
+  //         return Cpu;
+  //       case "Router":
+  //       case "Media Converter":
+  //         return Router;
+  //       default:
+  //         return Activity;
+  //     }
+  //   };
+
+  const getOfficeName = (officeId: number) => {
     const office = offices.find((o) => o.id === officeId);
     return office ? office.name : "Unknown Office";
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this customer?")) return;
+    if (!confirm("Are you sure you want to delete this junction?")) return;
     try {
-      await deleteCustomer(id);
-      setCustomers((prev) => prev.filter((d) => d.id !== id));
-      toast.success("Customer deleted successfully");
+      await deleteJunction(id);
+      setJunctions((prev) => prev.filter((d) => d.id !== id));
+      toast.success("Junction deleted successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete customer");
+      toast.error("Failed to delete Junction");
     }
   };
 
@@ -297,7 +323,7 @@ export default function Customers() {
     return (
       <NetworkLayout>
         <div className="flex items-center justify-center h-64">
-          <p>Loading customers...</p>
+          <p>Loading Junctions...</p>
         </div>
       </NetworkLayout>
     );
@@ -306,20 +332,21 @@ export default function Customers() {
   return (
     <NetworkLayout>
       <Toaster position="top-right" reverseOrder={false} />
+
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Customer Management
+              Junction Management
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Manage customer accounts
+              Monitor and manage all network Junctions
             </p>
           </div>
           <Button className="bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
-            Add Customer
+            Add Junction
           </Button>
         </div>
 
@@ -346,7 +373,7 @@ export default function Customers() {
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search customers..."
+              placeholder="Search Junctions..."
               className="pl-8 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -354,62 +381,45 @@ export default function Customers() {
           </div>
         </div>
 
-        {/* Customers Table (Desktop) */}
+        {/* Junctions Table */}
         <Card className="shadow-elegant backdrop-blur-sm bg-card/95">
           <CardContent className="p-0">
+            {/* Desktop Table View */}
             <div className="hidden sm:block w-full overflow-x-auto">
-              <table className="min-w-[900px] w-full text-sm text-left border-collapse">
+              <table className="min-w-[1000px] w-full text-sm text-left border-collapse">
                 <thead className="sticky top-0 z-10 bg-background shadow-sm">
                   <tr className="text-muted-foreground text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3">Name</th>
-                    <th className="px-4 py-3">Email</th>
-                    <th className="px-4 py-3">Phone</th>
-                    <th className="px-4 py-3">Address</th>
-                    <th className="px-4 py-3">OLT</th>
-                    <th className="px-4 py-3">Created</th>
-                    <th className="px-4 py-3 text-center">Actions</th>
+                    <th className="px-4 py-3 text-left">Junction Name</th>
+                    <th className="px-4 py-3 text-left">Junction Type</th>
+                    <th className="px-4 py-3 text-left">Post Code</th>
+                    <th className="px-4 py-3 text-left">Description</th>
+                    <th className="px-4 py-3 text-left">OLT</th>
+                    <th className="px-4 py-3 w-[50px] text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedCustomers.map((c, idx) => (
+                  {paginatedJunctions.map((junction, idx) => (
                     <tr
-                      key={c.id}
+                      key={junction.id}
                       className={`transition-colors hover:bg-muted/40 ${
                         idx % 2 === 0 ? "bg-muted/20" : "bg-background"
                       }`}
                     >
-                      <td className="px-4 py-3 flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-lg">
-                          <Users className="w-4 h-4 text-primary" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{c.name}</div>
-                          <div className="text-xs text-muted-foreground">
-                            ID: {c.id}
-                          </div>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{junction.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          ID: {junction.id}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{c.email}</td>
-                      <td className="px-4 py-3">{c.phone}</td>
-                      <td className="px-4 py-3 max-w-[200px] truncate">
-                        <Popover>
-                          <PopoverTrigger className=" cursor-pointer hover:underline">
-                            {c.address?.length > 20
-                              ? `${c.address.slice(0, 20)}...`
-                              : c.address}
-                          </PopoverTrigger>
-                          <PopoverContent className="max-w-sm text-sm">
-                            <p className="break-words">
-                              {c.address || "No Address Available"}
-                            </p>
-                          </PopoverContent>
-                        </Popover>
+                      <td className="px-4 py-3">{junction.junction_type}</td>
+                      <td className="px-4 py-3">{junction.post_code}</td>
+                      <td className="px-4 py-3">
+                        {junction.description || "N/A"}{" "}
+                      </td>
+                      <td className="px-4 py-3">
+                        {getOfficeName(junction.office)}
                       </td>
 
-                      <td className="px-4 py-3">{getOfficeName(c.office)}</td>
-                      <td className="px-4 py-3">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </td>
                       <td className="px-4 py-3 text-center">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -418,23 +428,25 @@ export default function Customers() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                                onClick={() => openViewModal(c)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openEditModal(c)}>
-                              Edit Customer
-                            </DropdownMenuItem>
-
                             <DropdownMenuItem
-                              onClick={() => openMapModal(c)}
+                              onClick={() => openViewModal(junction)}
+                            >
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openEditModal(junction)}
+                            >
+                              Edit Junction
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => openMapModal(junction)}
                             >
                               Show on Map
                             </DropdownMenuItem>
+
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => handleDelete(c.id)} // FIXED
+                              onClick={() => handleDelete(junction.id)}
                             >
                               Delete
                             </DropdownMenuItem>
@@ -449,21 +461,16 @@ export default function Customers() {
 
             {/* Mobile Card View */}
             <div className="block sm:hidden space-y-4 p-4">
-              {paginatedCustomers.map((c) => (
-                <Card key={c.id} className="shadow-md">
+              {paginatedJunctions.map((junction) => (
+                <Card key={junction.id} className="shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg">
-                        <Users className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{c.name}</CardTitle>
-                        <CardDescription>
-                          {getOfficeName(c.office)}
-                        </CardDescription>
-                      </div>
+                    <div>
+                      <CardTitle className="text-lg">{junction.name}</CardTitle>
+                      <CardDescription>
+                        {junction.junction_type} •{" "}
+                        {getOfficeName(junction.office)}
+                      </CardDescription>
                     </div>
-                    {/* Actions Dropdown */}
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="sm">
@@ -471,23 +478,25 @@ export default function Customers() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                                onClick={() => openViewModal(c)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openEditModal(c)}>
-                          Edit Customer
+                        <DropdownMenuItem
+                          onClick={() => openViewModal(junction)}
+                        >
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => openEditModal(junction)}
+                        >
+                          Edit Junction
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => openMapModal(junction)}
+                        >
+                          Show on Map
                         </DropdownMenuItem>
 
                         <DropdownMenuItem
-                              onClick={() => openMapModal(c)}
-                            >
-                              Show on Map
-                            </DropdownMenuItem>
-                        <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(c.id)} // FIXED
+                          onClick={() => handleDelete(junction.id)}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -497,24 +506,18 @@ export default function Customers() {
 
                   <CardContent className="space-y-1 text-sm">
                     <p className="break-all whitespace-normal">
-                      <strong>Email:</strong> {c.email}
+                      <strong>Post Code:</strong> {junction.post_code}
                     </p>
                     <p className="break-all whitespace-normal">
-                      <strong>Phone:</strong> {c.phone}
-                    </p>
-                    <p className="break-all whitespace-normal">
-                      <strong>Address:</strong> {c.address || "N/A"}
-                    </p>
-                    <p className="break-words whitespace-normal">
-                      <strong>Created:</strong>{" "}
-                      {new Date(c.created_at).toLocaleDateString()}
+                      <strong>Description:</strong>{" "}
+                      {junction.description || "N/A"}
                     </p>
                   </CardContent>
                 </Card>
               ))}
             </div>
 
-            {/* Pagination */}
+            {/* Pagination Controls */}
             <div className="flex justify-center items-center p-4 border-t">
               <div className="flex items-center space-x-2">
                 <Button
@@ -574,11 +577,10 @@ export default function Customers() {
           </CardContent>
         </Card>
       </div>
-
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
           <DialogHeader>
-            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogTitle>Edit Junction</DialogTitle>
           </DialogHeader>
           {editData && (
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
@@ -592,53 +594,33 @@ export default function Customers() {
                 />
               </div>
               <div>
-                <Label>Email</Label>
+                <Label>Junction Type</Label>
                 <Input
-                  type="email"
-                  value={editData.email}
+                  value={editData.junction_type}
                   onChange={(e) =>
-                    setEditData({ ...editData, email: e.target.value })
+                    setEditData({ ...editData, junction_type: e.target.value })
                   }
                 />
               </div>
               <div>
-                <Label>Phone</Label>
+                <Label>Post Code</Label>
                 <Input
-                  value={editData.phone}
+                  value={editData.post_code}
                   onChange={(e) =>
-                    setEditData({ ...editData, phone: e.target.value })
+                    setEditData({ ...editData, post_code: e.target.value })
                   }
                 />
               </div>
+
               <div>
-                <Label>Address</Label>
+                <Label>Description</Label>
                 <Input
-                  value={editData.address}
+                  value={editData.description}
                   onChange={(e) =>
-                    setEditData({ ...editData, address: e.target.value })
+                    setEditData({ ...editData, description: e.target.value })
                   }
                 />
               </div>
-              {/* <div>
-                <Label>Office</Label>
-                <Select
-                  value={editData.office?.toString() || ""}
-                  onValueChange={(val) =>
-                    setEditData({ ...editData, office: parseInt(val) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Office" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {offices.map((office) => (
-                      <SelectItem key={office.id} value={office.id.toString()}>
-                        {office.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
             </div>
           )}
           <DialogFooter>
@@ -648,15 +630,15 @@ export default function Customers() {
             <Button
               onClick={async () => {
                 try {
-                  await updateCustomer(editData.id, editData);
-                  setCustomers((prev) =>
-                    prev.map((c) => (c.id === editData.id ? editData : c))
+                  await updateJunction(editData.id, editData);
+                  setJunctions((prev) =>
+                    prev.map((d) => (d.id === editData.id ? editData : d))
                   );
-                  toast.success("Customer updated successfully");
+                  toast.success("Junction updated successfully");
                   setIsEditOpen(false);
                 } catch (error) {
                   console.error(error);
-                  toast.error("Failed to update customer");
+                  toast.error("Failed to update Junction");
                 }
               }}
             >
@@ -667,45 +649,42 @@ export default function Customers() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-  <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
-    <DialogHeader>
-      <DialogTitle>Customer Details</DialogTitle>
-    </DialogHeader>
-    {viewData && (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-        <div>
-          <strong>Name:</strong>
-          <p>{viewData.name}</p>
-        </div>
-        <div>
-          <strong>Email:</strong>
-          <p>{viewData.email}</p>
-        </div>
-        <div>
-          <strong>Phone:</strong>
-          <p>{viewData.phone}</p>
-        </div>
-        <div className="sm:col-span-2">
-          <strong>Address:</strong>
-          <p className="break-words">{viewData.address || "N/A"}</p>
-        </div>
-        <div>
-          <strong>OLT:</strong>
-          <p>{getOfficeName(viewData.office)}</p>
-        </div>
-        <div>
-          <strong>Created At:</strong>
-          <p>{new Date(viewData.created_at).toLocaleString()}</p>
-        </div>
-      </div>
-    )}
-    <DialogFooter>
-      <Button onClick={() => setIsViewOpen(false)}>Close</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Junction Details</DialogTitle>
+          </DialogHeader>
+          {viewData && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <strong>Name:</strong>
+                <p>{viewData.name || "N/A"}</p>
+              </div>
+              <div>
+                <strong>Junction Type:</strong>
+                <p>{viewData.junction_type || "N/A"}</p>
+              </div>
+              <div>
+                <strong>Post Code:</strong>
+                <p>{viewData.post_code || "N/A"}</p>
+              </div>
 
-<Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+              <div className="sm:col-span-2">
+                <strong>Description:</strong>
+                <p>{viewData.description || "N/A"}</p>
+              </div>
+              <div>
+                <strong>OLT:</strong>
+                <p>{getOfficeName(viewData.office)}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
         <DialogContent
           className="max-w-4xl w-[95%] h-[80vh] p-0 relative rounded-xl overflow-hidden flex flex-col"
           style={{
@@ -737,11 +716,11 @@ export default function Customers() {
                 attribution="&copy; OpenStreetMap contributors"
               />
 
-              {/* Selected Customer (highlighted) */}
+              {/* Selected Junction (highlighted) */}
               {mapData.latitude && mapData.longitude && (
                 <Marker
                   position={[mapData.latitude, mapData.longitude]}
-                  icon={customerIcon}
+                  icon={junctionIcon}
                 >
                   <Popup>
                     <b>{mapData.name}</b>
@@ -763,20 +742,20 @@ export default function Customers() {
                 </Marker>
               )}
 
-              {/* Other Customers */}
-              {relatedCustomers.map(
-                (customer) =>
-                  customer.latitude &&
-                  customer.longitude && (
+              {/* Other Junctions */}
+              {relatedJunctions.map(
+                (junction) =>
+                  junction.latitude &&
+                  junction.longitude && (
                     <Marker
-                      key={customer.id}
-                      position={[customer.latitude, customer.longitude]}
-                      icon={customerIcon}
+                      key={junction.id}
+                      position={[junction.latitude, junction.longitude]}
+                      icon={junctionIcon}
                     >
                       <Popup>
-                        <b>{customer.name}</b>
+                        <b>{junction.name}</b>
                         <br />
-                        {customer.description || "No description"}
+                        {junction.description || "No description"}
                       </Popup>
                     </Marker>
                   )
@@ -803,20 +782,20 @@ export default function Customers() {
                   )
               )}
 
-              {/* Junctions */}
-              {junctions.map(
-                (jun) =>
-                  jun.latitude &&
-                  jun.longitude && (
+              {/* Customers */}
+              {customers.map(
+                (cust) =>
+                  cust.latitude &&
+                  cust.longitude && (
                     <Marker
-                      key={jun.id}
-                      position={[jun.latitude, jun.longitude]}
-                      icon={junctionIcon}
+                      key={cust.id}
+                      position={[cust.latitude, cust.longitude]}
+                      icon={customerIcon}
                     >
                       <Popup>
-                        <b>{jun.name}</b>
+                        <b>{cust.name}</b>
                         <br />
-                        {jun.address || "No address"}
+                        {cust.address || "No address"}
                       </Popup>
                     </Marker>
                   )
@@ -844,7 +823,6 @@ export default function Customers() {
           )}
         </DialogContent>
       </Dialog>
-
     </NetworkLayout>
   );
 }

@@ -27,13 +27,23 @@ import { NavLink } from "react-router-dom";
 const menuItems = [
   {
     title: "Dashboard",
-    url: "/",
+    url: "/dashboard",
     icon: LayoutDashboard,
   },
   {
     title: "Network Map",
     url: "/map",
     icon: Map,
+  },
+  {
+    title: "olt",
+    url: "/olt",
+    icon: Router,
+  },
+  {
+    title: "Junctions",
+    url: "/junctions",
+    icon: Router,
   },
   {
     title: "Devices",
