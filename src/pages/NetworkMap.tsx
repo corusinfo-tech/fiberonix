@@ -576,7 +576,7 @@ export default function NetworkMap() {
     mapRef.current = target;
   }}
   center={mapCenter}
-  zoom={13}
+  zoom={10}
   scrollWheelZoom={true}
   style={{
     height: "100%",
