@@ -292,6 +292,23 @@ export default function NetworkMap() {
   const mapRef = useRef<any>(null);
   const [editingRouteIdx, setEditingRouteIdx] = useState<number | null>(null);
 
+  const [mapCenter, setMapCenter] = useState<[number, number]>([10.0, 76.0]); // default (e.g., Kerala)
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setMapCenter([position.coords.latitude, position.coords.longitude]);
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          // Optionally, you can set a fallback location here
+        },
+        { enableHighAccuracy: true }
+      );
+    }
+  }, []);
+  
   // Handler to enable edit mode for a route
   const handleEditRoute = () => {
     if (selected && selected.type === "route") {
@@ -555,18 +572,19 @@ export default function NetworkMap() {
               </div>
               {/* @ts-ignore */}
               <MapContainer
-                whenReady={({ target }: { target: L.Map }) => {
-                  mapRef.current = target;
-                }}
-                center={center}
-                zoom={13}
-                scrollWheelZoom={true}
-                style={{
-                  height: "100%",
-                  width: "100%",
-                  borderRadius: "0.5rem",
-                }}
-              >
+  whenReady={({ target }: { target: L.Map }) => {
+    mapRef.current = target;
+  }}
+  center={center}
+  zoom={13}
+  scrollWheelZoom={true}
+  style={{
+    height: "100%",
+    width: "100%",
+    borderRadius: "0.5rem",
+  }}
+>
+
                 <GeomanControls
                   mode={drawMode}
                   onRouteDraw={(latlngs) => setPendingRoute(latlngs)}
