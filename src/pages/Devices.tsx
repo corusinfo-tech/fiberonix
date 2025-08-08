@@ -69,6 +69,7 @@ import {
   fetchOffices,
   fetchCustomers,
   fetchJunctions,
+  fetchSub,
   fetchRoutesByOffice,
 } from "@/services/api";
 import { deleteDevice } from "@/services/api";
@@ -147,6 +148,17 @@ const oltIcon = L.icon({
   iconAnchor: [14, 28],
 });
 
+const subOfficeIcon = L.divIcon({
+  html: `<span class="material-icons" style="
+    font-size: 30px;
+    color: black;
+    padding: 4px;
+  ">apartment</span>`,
+  className: "",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
 const DeviceIcon = ({ type, className = "w-5 h-5 text-primary" }) => {
   switch (type?.toLowerCase()) {
     case "splitter":
@@ -176,6 +188,8 @@ export default function Devices() {
   const [relatedDevices, setRelatedDevices] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [junctions, setJunctions] = useState([]);
+  const [subOffices, setSubOffices] = useState([]);
+
   const [routes, setRoutes] = useState([]);
 
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -202,6 +216,7 @@ export default function Devices() {
 
   const openMapModal = async (device) => {
     setMapData(device);
+    setIsMapOpen(true);
 
     // Find office details
     const office = offices.find((o) => o.id === device.office);
@@ -216,7 +231,7 @@ export default function Devices() {
       setOfficeLocation(null);
     }
 
-    // Get other devices in the same office (excluding the selected one)
+    // Other devices in same office (excluding the selected one)
     const officeDevices = devices.filter(
       (d) => d.office === device.office && d.id !== device.id
     );
@@ -234,9 +249,9 @@ export default function Devices() {
     // Fetch junctions
     try {
       const allJunctions = await fetchJunctions();
-      const filteredJunctions = allJunctions.filter(
-        (j) => j.office === device.office
-      );
+      const filteredJunctions = Array.isArray(allJunctions)
+        ? allJunctions.filter((j) => j.office === device.office)
+        : allJunctions.results?.filter((j) => j.office === device.office) || [];
       setJunctions(filteredJunctions);
     } catch (error) {
       console.error("Failed to fetch junctions:", error);
@@ -252,7 +267,17 @@ export default function Devices() {
       setRoutes([]);
     }
 
-    setIsMapOpen(true);
+    // **Fetch sub-offices**
+    try {
+      const subRes = await fetchSub();
+      const filteredSub = (
+        Array.isArray(subRes) ? subRes : subRes.results || []
+      ).filter((s) => s.office === device.office);
+      setSubOffices(filteredSub);
+    } catch (error) {
+      console.error("Failed to fetch sub-offices:", error);
+      setSubOffices([]);
+    }
   };
 
   useEffect(() => {
@@ -994,6 +1019,25 @@ export default function Devices() {
                         <Popup>
                           <b>{cust.name}</b> <br />
                           {cust.address || "No address"}
+                        </Popup>
+                      </Marker>
+                    )
+                )}
+
+                {/* Sub-Offices */}
+                {subOffices.map(
+                  (sub) =>
+                    sub.latitude &&
+                    sub.logitude && (
+                      <Marker
+                        key={sub.id}
+                        position={[sub.latitude, sub.logitude]}
+                        icon={subOfficeIcon}
+                      >
+                        <Popup>
+                          <b>{sub.name}</b>
+                          <br />
+                          {sub.address || "No address"}
                         </Popup>
                       </Marker>
                     )

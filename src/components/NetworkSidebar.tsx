@@ -30,14 +30,19 @@ const menuItems = [
     url: "/dashboard",
     icon: LayoutDashboard,
   },
+  // {
+  //   title: "Network Map",
+  //   url: "/map",
+  //   icon: Map,
+  // },
   {
-    title: "Network Map",
-    url: "/map",
-    icon: Map,
+    title: "OLT",
+    url: "/add",
+    icon: Router,
   },
   {
-    title: "olt",
-    url: "/olt",
+    title: "Sub Offices",
+    url: "/sub",
     icon: Router,
   },
   {
@@ -56,6 +61,11 @@ const menuItems = [
     icon: Users,
   },
   {
+    title: "Staffs",
+    url: "/staff",
+    icon: Users,
+  },
+  {
     title: "Payments",
     url: "/payments",
     icon: CreditCard,
@@ -65,16 +75,11 @@ const menuItems = [
     url: "/plans",
     icon: Package,
   },
-  {
-    title: "Pages",
-    url: "/pages",
-    icon: FileText,
-  },
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: Settings,
-  },
+  // {
+  //   title: "Settings",
+  //   url: "/settings",
+  //   icon: Settings,
+  // },
 ];
 
 export function NetworkSidebar() {

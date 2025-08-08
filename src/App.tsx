@@ -19,6 +19,9 @@ import ProtectedRoute from "@/components/ProtectedRoute";
 import Junctions from "./pages/Junction";
 import Olt from "./pages/Olt";
 import HomePage from "./pages/HomePage";
+import Add from "./pages/Add";
+import SubOffice from "./pages/SubOffice";
+import StaffList from "./pages/StaffList";
 
 Navigate;
 
@@ -60,6 +63,14 @@ const App = () => (
               }
             />
             <Route
+              path="/add"
+              element={
+                <ProtectedRoute>
+                  <Add />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/devices"
               element={
                 <ProtectedRoute>
@@ -83,7 +94,17 @@ const App = () => (
                 </ProtectedRoute>
               }
             />
+
+            <Route
+              path="/sub"
+              element={
+                <ProtectedRoute>
+                  <SubOffice />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/payments" element={<Payments />} />
+            <Route path="/staff" element={<StaffList />} />
             <Route path="/plans" element={<Plans />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/settings" element={<Settings />} />

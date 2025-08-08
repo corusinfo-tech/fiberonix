@@ -52,6 +52,7 @@ import {
   fetchJunctions,
   fetchDevices,
   fetchCustomers,
+  fetchSub,
   fetchRoutesByOffice,
 } from "@/services/api";
 import { deleteCustomer } from "@/services/api";
@@ -89,6 +90,17 @@ const junctionIcon = L.icon({
   iconUrl: "/icons/junction.png",
   iconSize: [30, 30],
   iconAnchor: [15, 30],
+});
+
+const subOfficeIcon = L.divIcon({
+  html: `<span class="material-icons" style="
+    font-size: 30px;
+    color: black;
+    padding: 4px;
+  ">apartment</span>`,
+  className: "",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
 });
 
 const getDeviceIcon = (type) => {
@@ -130,7 +142,6 @@ const oltIcon = L.icon({
   iconAnchor: [14, 28],
 });
 
-
 export default function Customers() {
   const [customers, setCustomers] = useState([]);
   const [offices, setOffices] = useState([]);
@@ -139,12 +150,34 @@ export default function Customers() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editData, setEditData] = useState(null);
 
-   const [isMapOpen, setIsMapOpen] = useState(false);
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const newErrors = {};
+    if (!editData.name?.trim()) newErrors.name = "Name is required";
+    if (!editData.email?.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editData.email)) {
+      newErrors.email = "Enter a valid email";
+    }
+    if (!editData.phone?.trim()) {
+      newErrors.phone = "Phone is required";
+    } else if (!/^\d{10}$/.test(editData.phone)) {
+      newErrors.phone = "Phone must be 10 digits";
+    }
+    if (!editData.address?.trim()) newErrors.address = "Address is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const [isMapOpen, setIsMapOpen] = useState(false);
   const [mapData, setMapData] = useState(null);
   const [officeLocation, setOfficeLocation] = useState(null);
   const [relatedCustomers, setRelatedCustomers] = useState([]);
   const [relatedDevices, setRelatedDevices] = useState([]);
   const [junctions, setJunctions] = useState([]);
+  const [subOffices, setSubOffices] = useState([]);
+
   const [routes, setRoutes] = useState([]);
 
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -169,6 +202,7 @@ export default function Customers() {
 
   const openMapModal = async (customer) => {
     setMapData(customer);
+    setIsMapOpen(true);
 
     // Find office details
     const office = offices.find((o) => o.id === customer.office);
@@ -192,9 +226,9 @@ export default function Customers() {
     // Fetch devices
     try {
       const devicesData = await fetchDevices();
-      const filteredDevices = devicesData.results.filter(
-        (d) => d.office === customer.office
-      );
+      const filteredDevices = (
+        Array.isArray(devicesData) ? devicesData : devicesData.results || []
+      ).filter((d) => d.office === customer.office);
       setRelatedDevices(filteredDevices);
     } catch (error) {
       console.error("Failed to fetch devices:", error);
@@ -204,15 +238,15 @@ export default function Customers() {
     // Fetch junctions
     try {
       const junctionsData = await fetchJunctions();
-      const filteredJunctions = (junctionsData || []).filter(
-        (j) => j.office === customer.office
-      );
+      const filteredJunctions = Array.isArray(junctionsData)
+        ? junctionsData.filter((j) => j.office === customer.office)
+        : junctionsData.results?.filter((j) => j.office === customer.office) ||
+          [];
       setJunctions(filteredJunctions);
     } catch (error) {
       console.error("Failed to fetch junctions:", error);
       setJunctions([]);
     }
-    
 
     // Fetch routes
     try {
@@ -223,9 +257,18 @@ export default function Customers() {
       setRoutes([]);
     }
 
-    setIsMapOpen(true);
+    // **Fetch sub-offices**
+    try {
+      const subRes = await fetchSub();
+      const filteredSub = (
+        Array.isArray(subRes) ? subRes : subRes.results || []
+      ).filter((s) => s.office === customer.office);
+      setSubOffices(filteredSub);
+    } catch (error) {
+      console.error("Failed to fetch sub-offices:", error);
+      setSubOffices([]);
+    }
   };
-  
 
   useEffect(() => {
     const getData = async () => {
@@ -418,18 +461,14 @@ export default function Customers() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                                onClick={() => openViewModal(c)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openViewModal(c)}>
+                              View Details
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openEditModal(c)}>
                               Edit Customer
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem
-                              onClick={() => openMapModal(c)}
-                            >
+                            <DropdownMenuItem onClick={() => openMapModal(c)}>
                               Show on Map
                             </DropdownMenuItem>
                             <DropdownMenuItem
@@ -471,20 +510,16 @@ export default function Customers() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                                onClick={() => openViewModal(c)}
-                              >
-                                View Details
-                              </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openViewModal(c)}>
+                          View Details
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => openEditModal(c)}>
                           Edit Customer
                         </DropdownMenuItem>
 
-                        <DropdownMenuItem
-                              onClick={() => openMapModal(c)}
-                            >
-                              Show on Map
-                            </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => openMapModal(c)}>
+                          Show on Map
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           className="text-destructive"
                           onClick={() => handleDelete(c.id)} // FIXED
@@ -590,6 +625,9 @@ export default function Customers() {
                     setEditData({ ...editData, name: e.target.value })
                   }
                 />
+                {errors.name && (
+                  <p className="text-red-500 text-sm">{errors.name}</p>
+                )}
               </div>
               <div>
                 <Label>Email</Label>
@@ -600,6 +638,9 @@ export default function Customers() {
                     setEditData({ ...editData, email: e.target.value })
                   }
                 />
+                {errors.email && (
+                  <p className="text-red-500 text-sm">{errors.email}</p>
+                )}
               </div>
               <div>
                 <Label>Phone</Label>
@@ -609,6 +650,9 @@ export default function Customers() {
                     setEditData({ ...editData, phone: e.target.value })
                   }
                 />
+                {errors.phone && (
+                  <p className="text-red-500 text-sm">{errors.phone}</p>
+                )}
               </div>
               <div>
                 <Label>Address</Label>
@@ -618,27 +662,10 @@ export default function Customers() {
                     setEditData({ ...editData, address: e.target.value })
                   }
                 />
+                {errors.address && (
+                  <p className="text-red-500 text-sm">{errors.address}</p>
+                )}
               </div>
-              {/* <div>
-                <Label>Office</Label>
-                <Select
-                  value={editData.office?.toString() || ""}
-                  onValueChange={(val) =>
-                    setEditData({ ...editData, office: parseInt(val) })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select Office" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {offices.map((office) => (
-                      <SelectItem key={office.id} value={office.id.toString()}>
-                        {office.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
             </div>
           )}
           <DialogFooter>
@@ -647,6 +674,7 @@ export default function Customers() {
             </Button>
             <Button
               onClick={async () => {
+                if (!validate()) return; // stop if validation fails
                 try {
                   await updateCustomer(editData.id, editData);
                   setCustomers((prev) =>
@@ -667,45 +695,45 @@ export default function Customers() {
       </Dialog>
 
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
-  <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
-    <DialogHeader>
-      <DialogTitle>Customer Details</DialogTitle>
-    </DialogHeader>
-    {viewData && (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-        <div>
-          <strong>Name:</strong>
-          <p>{viewData.name}</p>
-        </div>
-        <div>
-          <strong>Email:</strong>
-          <p>{viewData.email}</p>
-        </div>
-        <div>
-          <strong>Phone:</strong>
-          <p>{viewData.phone}</p>
-        </div>
-        <div className="sm:col-span-2">
-          <strong>Address:</strong>
-          <p className="break-words">{viewData.address || "N/A"}</p>
-        </div>
-        <div>
-          <strong>OLT:</strong>
-          <p>{getOfficeName(viewData.office)}</p>
-        </div>
-        <div>
-          <strong>Created At:</strong>
-          <p>{new Date(viewData.created_at).toLocaleString()}</p>
-        </div>
-      </div>
-    )}
-    <DialogFooter>
-      <Button onClick={() => setIsViewOpen(false)}>Close</Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+        <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+          </DialogHeader>
+          {viewData && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+              <div>
+                <strong>Name:</strong>
+                <p>{viewData.name}</p>
+              </div>
+              <div>
+                <strong>Email:</strong>
+                <p>{viewData.email}</p>
+              </div>
+              <div>
+                <strong>Phone:</strong>
+                <p>{viewData.phone}</p>
+              </div>
+              <div className="sm:col-span-2">
+                <strong>Address:</strong>
+                <p className="break-words">{viewData.address || "N/A"}</p>
+              </div>
+              <div>
+                <strong>OLT:</strong>
+                <p>{getOfficeName(viewData.office)}</p>
+              </div>
+              <div>
+                <strong>Created At:</strong>
+                <p>{new Date(viewData.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsViewOpen(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-<Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
+      <Dialog open={isMapOpen} onOpenChange={setIsMapOpen}>
         <DialogContent
           className="max-w-4xl w-[95%] h-[80vh] p-0 relative rounded-xl overflow-hidden flex flex-col"
           style={{
@@ -786,10 +814,10 @@ export default function Customers() {
               {relatedDevices.map(
                 (dev) =>
                   dev.latitude &&
-                  dev.longitude && (
+                  dev.logitutde && (
                     <Marker
                       key={dev.id}
-                      position={[dev.latitude, dev.longitude]}
+                      position={[dev.latitude, dev.logitutde]}
                       icon={getDeviceIcon(dev.device_type)}
                     >
                       <Popup>
@@ -822,6 +850,25 @@ export default function Customers() {
                   )
               )}
 
+              {/* Sub-Offices */}
+              {subOffices.map(
+                (sub) =>
+                  sub.latitude &&
+                  sub.logitude && (
+                    <Marker
+                      key={sub.id}
+                      position={[sub.latitude, sub.logitude]}
+                      icon={subOfficeIcon}
+                    >
+                      <Popup>
+                        <b>{sub.name}</b>
+                        <br />
+                        {sub.address || "No address"}
+                      </Popup>
+                    </Marker>
+                  )
+              )}
+
               {/* Routes */}
               {routes.map((route) => {
                 const validPoints = route.path.filter(
@@ -844,7 +891,6 @@ export default function Customers() {
           )}
         </DialogContent>
       </Dialog>
-
     </NetworkLayout>
   );
 }

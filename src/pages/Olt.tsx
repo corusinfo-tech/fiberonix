@@ -152,30 +152,41 @@ export default function Offices() {
   const [pageSize, setPageSize] = useState(10);
 
   const openMapModal = async (office) => {
+    setLoading(true);
+    setMapData(office);
+
     try {
-      setLoading(true);
-      setMapData(office);
+      // Routes
+      try {
+        const routesData = await fetchRoutesByOffice(office.id);
+        setRoutes(Array.isArray(routesData) ? routesData : []);
+      } catch (err) {
+        setRoutes([]); // fallback
+        toast.error("Failed to load routes for this office");
+      }
 
-      const [routesData, customersData] = await Promise.all([
-        fetchRoutesByOffice(office.id),
-        fetchCustomers(office.id),
-      ]);
+      // Customers
+      try {
+        const customersData = await fetchCustomers(office.id);
+        setCustomers(Array.isArray(customersData) ? customersData : []);
+      } catch (err) {
+        setCustomers([]);
+        toast.error("Failed to load customers for this office");
+      }
 
-      setRoutes(routesData);
-      setCustomers(customersData);
-
-      // Filter devices and junctions by office
+      // Devices
       const devicesForOffice = allDevices.filter((d) => d.office === office.id);
-      setDevices(devicesForOffice);
+      setDevices(Array.isArray(devicesForOffice) ? devicesForOffice : []);
 
+      // Junctions
       const junctionsForOffice = allJunctions.filter(
         (j) => j.office === office.id
       );
-      setJunctions(junctionsForOffice);
+      setJunctions(Array.isArray(junctionsForOffice) ? junctionsForOffice : []);
 
       setIsMapOpen(true);
     } catch (err) {
-      toast.error("Failed to load map data");
+      toast.error("Error loading map data");
     } finally {
       setLoading(false);
     }
@@ -616,55 +627,64 @@ export default function Offices() {
                 </Marker>
 
                 {/* Routes */}
-                {routes.map((route) => (
-                  <Polyline
-                    key={route.id}
-                    positions={route.path.map((p) => [p.latitude, p.longitude])}
-                    pathOptions={{ color: "black", weight: 4 }}
-                  />
-                ))}
+                {Array.isArray(routes) &&
+                  routes.map((route) => (
+                    <Polyline
+                      key={route.id}
+                      positions={route.path.map((p) => [
+                        p.latitude,
+                        p.longitude,
+                      ])}
+                      pathOptions={{ color: "black", weight: 4 }}
+                    />
+                  ))}
 
-                {/* Show customers */}
-                {customers.map((cust) => (
-                  <Marker
-                    key={cust.id}
-                    position={[cust.latitude, cust.longitude]}
-                    icon={customerIcon}
-                  >
-                    <Popup>
-                      <b>{cust.name}</b> <br /> {cust.address}
-                    </Popup>
-                  </Marker>
-                ))}
+                {/* Customers */}
+                {Array.isArray(customers) &&
+                  customers.map((cust) => (
+                    <Marker
+                      key={cust.id}
+                      position={[cust.latitude, cust.longitude]}
+                      icon={customerIcon}
+                    >
+                      <Popup>
+                        <b>{cust.name}</b> <br /> {cust.address}
+                      </Popup>
+                    </Marker>
+                  ))}
 
-                {junctions.map((junction) => (
-                  <Marker
-                    key={junction.id}
-                    position={[junction.latitude, junction.longitude]}
-                    icon={junctionIcon}
-                  >
-                    <Popup>
-                      <b>{junction.name}</b> <br />
-                      {junction.description || "No description"}
-                    </Popup>
-                  </Marker>
-                ))}
+                {/* Junctions */}
+                {Array.isArray(junctions) &&
+                  junctions.map((junction) => (
+                    <Marker
+                      key={junction.id}
+                      position={[junction.latitude, junction.longitude]}
+                      icon={junctionIcon}
+                    >
+                      <Popup>
+                        <b>{junction.name}</b> <br />
+                        {junction.description || "No description"}
+                      </Popup>
+                    </Marker>
+                  ))}
 
-                {devices.map((device) => (
-                  <Marker
-                    key={device.id}
-                    position={[device.latitude, device.logitutde]} // note: "logitutde" is misspelled in your API
-                    icon={getDeviceIcon(device.device_type)}
-                  >
-                    <Popup>
-                      <b>
-                        {device.device_type} - {device.model_name}
-                      </b>{" "}
-                      <br />
-                      {device.description || "No description"}
-                    </Popup>
-                  </Marker>
-                ))}
+                {/* Devices */}
+                {Array.isArray(devices) &&
+                  devices.map((device) => (
+                    <Marker
+                      key={device.id}
+                      position={[device.latitude, device.logitutde]}
+                      icon={getDeviceIcon(device.device_type)}
+                    >
+                      <Popup>
+                        <b>
+                          {device.device_type} - {device.model_name}
+                        </b>
+                        <br />
+                        {device.description || "No description"}
+                      </Popup>
+                    </Marker>
+                  ))}
               </MapContainer>
             </div>
           )}

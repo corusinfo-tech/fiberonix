@@ -1,11 +1,14 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
+
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(localStorage.getItem("authToken") || null);
   const [name, setName] = useState(localStorage.getItem("authName") || null);
+ 
 
+  // Sync token to localStorage
   useEffect(() => {
     if (token) {
       localStorage.setItem("authToken", token);
@@ -14,6 +17,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  // Sync name to localStorage
   useEffect(() => {
     if (name) {
       localStorage.setItem("authName", name);
@@ -21,6 +25,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem("authName");
     }
   }, [name]);
+
+  
 
   const login = (token, name) => {
     setToken(token);
@@ -30,10 +36,19 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     setToken(null);
     setName(null);
+    setCompanyId(null);
   };
 
   return (
-    <AuthContext.Provider value={{ token, name, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{
+        token,
+        name,
+        login,
+        logout,
+        isAuthenticated: !!token,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

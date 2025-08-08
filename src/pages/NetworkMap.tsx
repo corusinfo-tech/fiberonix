@@ -31,6 +31,7 @@ import { useState, useEffect, useRef } from "react";
 import * as L from "leaflet";
 import "@geoman-io/leaflet-geoman-free";
 import "@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css";
+import { createOffice, fetchOffices, deleteOffice  } from "@/services/api";
 
 
 import React from "react";
@@ -168,6 +169,8 @@ function SubOfficeClickHandler({
   return null;
 }
 
+
+
 function JunctionClickHandler({
   onMapClick,
 }: {
@@ -222,6 +225,9 @@ function CustomerClickHandler({
   return null;
 }
 
+
+
+
 export default function NetworkMap() {
   const center: LatLngExpression = [51.505, -0.09];
   const [drawMode, setDrawMode] = useState<"disabled" | "point" | "freehand">(
@@ -233,8 +239,11 @@ export default function NetworkMap() {
     useState<LatLngExpression | null>(null);
   const [formData, setFormData] = useState({ name: "", address: "" });
   const [subOffices, setSubOffices] = useState<
-    { name: string; address: string; position: LatLngExpression }[]
-  >([]);
+  { id: number; name: string; address: string; position: LatLngExpression }[]
+>([]);
+
+
+
 
   const [addingJunction, setAddingJunction] = useState(false);
   const [clickedJunctionPosition, setClickedJunctionPosition] =
@@ -308,7 +317,7 @@ export default function NetworkMap() {
       );
     }
   }, []);
-  
+
   // Handler to enable edit mode for a route
   const handleEditRoute = () => {
     if (selected && selected.type === "route") {
@@ -357,20 +366,85 @@ export default function NetworkMap() {
   };
 
   // Delete handler
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
     if (!selected) return;
-    if (selected.type === "subOffice")
-      setSubOffices(subOffices.filter((_, i) => i !== selected.index));
-    if (selected.type === "junction")
-      setJunctions(junctions.filter((_, i) => i !== selected.index));
-    if (selected.type === "device")
-      setDevices(devices.filter((_, i) => i !== selected.index));
-    if (selected.type === "customer")
-      setCustomers(customers.filter((_, i) => i !== selected.index));
-    if (selected.type === "route")
-      setRoutes(routes.filter((_, i) => i !== selected.index));
-    setSelected(null);
+    try {
+      if (selected.type === "subOffice") {
+        const officeToDelete = subOffices[selected.index];
+        if (!officeToDelete.id) {
+          alert("Invalid office ID");
+          return;
+        }
+        await deleteOffice(officeToDelete.id);
+        setSubOffices(subOffices.filter((_, i) => i !== selected.index));
+      }
+      // ... handle others
+      setSelected(null);
+    } catch (err) {
+      console.error("Error deleting:", err);
+      alert("Failed to delete");
+    }
   };
+  
+  
+  
+
+
+  const handleSaveSubOffice = async () => {
+    if (!clickedPosition) return;
+  
+    const payload = {
+      name: formData.name,
+      address: formData.address,
+      latitude: (clickedPosition as [number, number])[0],
+      longitude: (clickedPosition as [number, number])[1],
+    };
+  
+    try {
+      const newOffice = await createOffice(payload);
+  
+      setSubOffices([
+        ...subOffices,
+        {
+          id: newOffice.id,  // <--- add this
+          name: newOffice.name,
+          address: newOffice.address,
+          position: [newOffice.latitude, newOffice.longitude] as LatLngExpression,
+        },
+      ]);
+      
+  
+      setClickedPosition(null);
+      setFormData({ name: "", address: "" });
+      setAddingSubOffice(false);
+    } catch (err) {
+      console.error("Failed to create office:", err);
+      alert("Error saving sub office");
+    }
+  };
+  
+  
+
+  useEffect(() => {
+    const loadOffices = async () => {
+      try {
+        const offices = await fetchOffices();
+        setSubOffices(
+          offices.map((o: any) => ({
+            id: o.id, // <-- Add this
+            name: o.name,
+            address: o.address,
+            position: [o.latitude, o.longitude] as LatLngExpression,
+          }))
+        );
+      } catch (err) {
+        console.error("Failed to fetch offices:", err);
+      }
+    };
+    loadOffices();
+  }, []);
+  
+  
 
   return (
     <NetworkLayout>
@@ -572,19 +646,18 @@ export default function NetworkMap() {
               </div>
               {/* @ts-ignore */}
               <MapContainer
-  whenReady={({ target }: { target: L.Map }) => {
-    mapRef.current = target;
-  }}
-  center={mapCenter}
-  zoom={10}
-  scrollWheelZoom={true}
-  style={{
-    height: "100%",
-    width: "100%",
-    borderRadius: "0.5rem",
-  }}
->
-
+                whenReady={({ target }: { target: L.Map }) => {
+                  mapRef.current = target;
+                }}
+                center={mapCenter}
+                zoom={10}
+                scrollWheelZoom={true}
+                style={{
+                  height: "100%",
+                  width: "100%",
+                  borderRadius: "0.5rem",
+                }}
+              >
                 <GeomanControls
                   mode={drawMode}
                   onRouteDraw={(latlngs) => setPendingRoute(latlngs)}
@@ -595,11 +668,10 @@ export default function NetworkMap() {
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
 
-                 {/* Add user location marker here */}
-  <Marker position={mapCenter}>
-    <Popup>You are here</Popup>
-  </Marker>
-
+                {/* Add user location marker here */}
+                <Marker position={mapCenter}>
+                  <Popup>You are here</Popup>
+                </Marker>
 
                 <Marker position={center}>
                   <Popup>
@@ -865,24 +937,9 @@ export default function NetworkMap() {
                 >
                   Cancel
                 </Button>
-                <Button
-                  className="bg-gradient-primary"
-                  onClick={() => {
-                    setSubOffices([
-                      ...subOffices,
-                      {
-                        name: formData.name,
-                        address: formData.address,
-                        position: clickedPosition,
-                      },
-                    ]);
-                    setClickedPosition(null);
-                    setFormData({ name: "", address: "" });
-                    setAddingSubOffice(false);
-                  }}
-                >
-                  Save
-                </Button>
+                <Button className="bg-gradient-primary" onClick={handleSaveSubOffice}>
+  Save
+</Button>
               </div>
             </div>
           </div>

@@ -63,8 +63,8 @@ import {
   fetchRoutesByOffice,
   fetchSub,
 } from "@/services/api";
-import { deleteJunction } from "@/services/api";
-import { updateJunction } from "@/services/api";
+import { deleteSub } from "@/services/api";
+import { updateSub } from "@/services/api";
 import toast, { Toaster } from "react-hot-toast";
 
 import L from "leaflet";
@@ -99,6 +99,18 @@ const junctionIcon = L.icon({
   iconSize: [30, 30],
   iconAnchor: [15, 30],
 });
+
+const subOfficeIcon = L.divIcon({
+  html: `<span class="material-icons" style="
+    font-size: 30px;
+    color: black; /* Blue for sub-offices */
+    padding: 4px;
+  ">apartment</span>`,
+  className: "",
+  iconSize: [32, 32],
+  iconAnchor: [16, 32],
+});
+
 
 const getDeviceIcon = (type) => {
   let iconName = "device_unknown";
@@ -139,19 +151,8 @@ const oltIcon = L.icon({
   iconAnchor: [14, 28],
 });
 
-const subOfficeIcon = L.divIcon({
-  html: `<span class="material-icons" style="
-    font-size: 30px;
-    color: black;
-    padding: 4px;
-  ">apartment</span>`,
-  className: "",
-  iconSize: [32, 32],
-  iconAnchor: [16, 32],
-});
-
-export default function Junctions() {
-  const [junctions, setJunctions] = useState([]);
+export default function SubOffice() {
+  const [sub, setSub] = useState([]);
   const [offices, setOffices] = useState([]);
   const [selectedOffice, setSelectedOffice] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -162,9 +163,9 @@ export default function Junctions() {
   const [mapData, setMapData] = useState(null);
   const [officeLocation, setOfficeLocation] = useState(null);
   const [relatedJunctions, setRelatedJunctions] = useState([]);
+  const [relatedSub, setRelatedSub] = useState([]);
   const [relatedDevices, setRelatedDevices] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [subOffices, setSubOffices] = useState([]);
   const [routes, setRoutes] = useState([]);
 
   const [isViewOpen, setIsViewOpen] = useState(false);
@@ -176,48 +177,48 @@ export default function Junctions() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const openViewModal = (junction) => {
-    setViewData(junction);
+  const openViewModal = (sub) => {
+    setViewData(sub);
     setIsViewOpen(true);
   };
 
   // Derived data
-  const [filteredJunctions, setFilteredJunctions] = useState([]);
+  const [filteredSub, setFilteredSub] = useState([]);
 
-  const openEditModal = (junction) => {
-    setEditData({ ...junction }); // Pre-fill data
+  const openEditModal = (sub) => {
+    setEditData({ ...sub }); // Pre-fill data
     setIsEditOpen(true);
   };
 
-  const openMapModal = async (junction) => {
-    setMapData(junction);
+  const openMapModal = async (selectedSub) => {
+    setMapData(selectedSub);
     setIsMapOpen(true);
 
     // Find office details
-    const office = offices.find((o) => o.id === junction.office);
-    if (office) {
-      setOfficeLocation({
-        id: office.id,
-        name: office.name,
-        latitude: office.latitude,
-        longitude: office.longitude,
-      });
-    } else {
-      setOfficeLocation(null);
-    }
-
-    // Other junctions in same office
-    const officeJunctions = junctions.filter(
-      (j) => j.office === junction.office && j.id !== junction.id
+    const office = offices.find((o) => o.id === selectedSub.office);
+    setOfficeLocation(
+      office
+        ? {
+            id: office.id,
+            name: office.name,
+            latitude: office.latitude,
+            longitude: office.longitude,
+          }
+        : null
     );
-    setRelatedJunctions(officeJunctions);
+
+    // Other subs in same office
+    const officeSub = sub.filter(
+      (s) => s.office === selectedSub.office && s.id !== selectedSub.id
+    );
+    setRelatedSub(officeSub);
 
     // Fetch devices
     try {
       const devicesData = await fetchDevices();
       const filteredDevices = (
         Array.isArray(devicesData) ? devicesData : devicesData.results || []
-      ).filter((d) => d.office === junction.office);
+      ).filter((d) => d.office === selectedSub.office);
       setRelatedDevices(filteredDevices);
     } catch (error) {
       console.error("Failed to fetch devices:", error);
@@ -226,32 +227,34 @@ export default function Junctions() {
 
     // Fetch customers
     try {
-      const customersData = await fetchCustomers(junction.office);
+      const customersData = await fetchCustomers(selectedSub.office);
       setCustomers(customersData || []);
     } catch (error) {
       console.error("Failed to fetch customers:", error);
       setCustomers([]);
     }
 
+    // Fetch junctions for this sub-office
+    try {
+      const allJunctions = await fetchJunctions();
+      const filteredJunctions = Array.isArray(allJunctions)
+        ? allJunctions.filter((j) => j.office === selectedSub.office)
+        : allJunctions.results?.filter(
+            (j) => j.office === selectedSub.office
+          ) || [];
+      setRelatedJunctions(filteredJunctions);
+    } catch (error) {
+      console.error("Failed to fetch junctions:", error);
+      setRelatedJunctions([]);
+    }
+
     // Fetch routes
     try {
-      const routesData = await fetchRoutesByOffice(junction.office);
+      const routesData = await fetchRoutesByOffice(selectedSub.office);
       setRoutes(routesData || []);
     } catch (error) {
       console.error("Failed to fetch routes:", error);
       setRoutes([]);
-    }
-
-    // **Fetch sub-offices**
-    try {
-      const subRes = await fetchSub();
-      const filteredSub = (
-        Array.isArray(subRes) ? subRes : subRes.results || []
-      ).filter((s) => s.office === junction.office);
-      setSubOffices(filteredSub);
-    } catch (error) {
-      console.error("Failed to fetch sub-offices:", error);
-      setSubOffices([]);
     }
   };
 
@@ -259,17 +262,15 @@ export default function Junctions() {
     const getData = async () => {
       try {
         setLoading(true);
-        const [junctionRes, officeRes] = await Promise.all([
-          fetchJunctions(),
+        const [subRes, officeRes] = await Promise.all([
+          fetchSub(),
           fetchOffices(),
         ]);
-        console.log("Junction API response:", junctionRes);
+        console.log("sub API response:", subRes);
         console.log("Office API response:", officeRes);
 
         // Handle array or object with results
-        setJunctions(
-          Array.isArray(junctionRes) ? junctionRes : junctionRes.results || []
-        );
+        setSub(Array.isArray(subRes) ? subRes : subRes.results || []);
         setOffices(
           Array.isArray(officeRes) ? officeRes : officeRes.results || []
         );
@@ -284,7 +285,7 @@ export default function Junctions() {
 
   // Filter when office changes
   useEffect(() => {
-    let filtered = junctions;
+    let filtered = sub;
 
     // Filter by office
     if (selectedOffice !== "all") {
@@ -295,24 +296,22 @@ export default function Junctions() {
     if (searchTerm.trim() !== "") {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(
-        (j) =>
-          j.name?.toLowerCase().includes(term) ||
-          j.junction_type?.toLowerCase().includes(term) ||
-          j.post_code?.toLowerCase().includes(term) ||
-          j.description?.toLowerCase().includes(term)
+        (s) =>
+          s.name?.toLowerCase().includes(term) ||
+          s.address?.toLowerCase().includes(term)
       );
     }
 
-    setFilteredJunctions(filtered);
+    setFilteredSub(filtered);
     setPage(1); // Reset to first page on filter change
-  }, [selectedOffice, searchTerm, junctions]);
+  }, [selectedOffice, searchTerm, sub]);
 
   // Slice for current page
-  const paginatedJunctions = filteredJunctions.slice(
+  const paginatedSub = filteredSub.slice(
     (page - 1) * pageSize,
     page * pageSize
   );
-  const totalPages = Math.ceil(filteredJunctions.length / pageSize);
+  const totalPages = Math.ceil(filteredSub.length / pageSize);
 
   //   const getJunctionIcon = (type: string) => {
   //     switch (type) {
@@ -332,14 +331,14 @@ export default function Junctions() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm("Are you sure you want to delete this junction?")) return;
+    if (!confirm("Are you sure you want to delete this suboffice?")) return;
     try {
-      await deleteJunction(id);
-      setJunctions((prev) => prev.filter((d) => d.id !== id));
-      toast.success("Junction deleted successfully");
+      await deleteSub(id);
+      setSub((prev) => prev.filter((d) => d.id !== id));
+      toast.success("SubOffice deleted successfully");
     } catch (error) {
       console.error(error);
-      toast.error("Failed to delete Junction");
+      toast.error("Failed to delete suboffice");
     }
   };
 
@@ -347,7 +346,7 @@ export default function Junctions() {
     return (
       <NetworkLayout>
         <div className="flex items-center justify-center h-64">
-          <p>Loading Junctions...</p>
+          <p>Loading suboffices...</p>
         </div>
       </NetworkLayout>
     );
@@ -362,15 +361,15 @@ export default function Junctions() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Junction Management
+              Sub Offices Management
             </h1>
             <p className="text-muted-foreground text-sm sm:text-base">
-              Monitor and manage all network Junctions
+              Monitor and manage all network Sub Offices
             </p>
           </div>
           <Button className="bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
-            Add Junction
+            Add Sub Office
           </Button>
         </div>
 
@@ -397,7 +396,7 @@ export default function Junctions() {
           <div className="relative w-full md:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search Junctions..."
+              placeholder="Search Sub Offices..."
               className="pl-8 w-full"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -405,7 +404,7 @@ export default function Junctions() {
           </div>
         </div>
 
-        {/* Junctions Table */}
+        {/* Sub Offices Table */}
         <Card className="shadow-elegant backdrop-blur-sm bg-card/95">
           <CardContent className="p-0">
             {/* Desktop Table View */}
@@ -413,36 +412,33 @@ export default function Junctions() {
               <table className="min-w-[1000px] w-full text-sm text-left border-collapse">
                 <thead className="sticky top-0 z-10 bg-background shadow-sm">
                   <tr className="text-muted-foreground text-xs uppercase tracking-wider">
-                    <th className="px-4 py-3 text-left">Junction Name</th>
-                    <th className="px-4 py-3 text-left">Junction Type</th>
-                    <th className="px-4 py-3 text-left">Post Code</th>
-                    <th className="px-4 py-3 text-left">Description</th>
+                    <th className="px-4 py-3 text-left"> Name</th>
+                    <th className="px-4 py-3 text-left">Address</th>
+
                     <th className="px-4 py-3 text-left">OLT</th>
+                    <th className="px-4 py-3 text-left">Created</th>
 
                     <th className="px-4 py-3 w-[50px] text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedJunctions.map((junction, idx) => (
+                  {paginatedSub.map((sub, idx) => (
                     <tr
-                      key={junction.id}
+                      key={sub.id}
                       className={`transition-colors hover:bg-muted/40 ${
                         idx % 2 === 0 ? "bg-muted/20" : "bg-background"
                       }`}
                     >
                       <td className="px-4 py-3">
-                        <div className="font-medium">{junction.name}</div>
+                        <div className="font-medium">{sub.name}</div>
                         <div className="text-xs text-muted-foreground">
-                          ID: {junction.id}
+                          ID: {sub.id}
                         </div>
                       </td>
-                      <td className="px-4 py-3">{junction.junction_type}</td>
-                      <td className="px-4 py-3">{junction.post_code}</td>
+                      <td className="px-4 py-3">{sub.address}</td>
+                      <td className="px-4 py-3">{getOfficeName(sub.office)}</td>
                       <td className="px-4 py-3">
-                        {junction.description || "N/A"}{" "}
-                      </td>
-                      <td className="px-4 py-3">
-                        {getOfficeName(junction.office)}
+                        {new Date(sub.created_at).toLocaleDateString()}
                       </td>
 
                       <td className="px-4 py-3 text-center">
@@ -454,24 +450,22 @@ export default function Junctions() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => openViewModal(junction)}
+                              onClick={() => openViewModal(sub)}
                             >
                               View Details
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => openEditModal(junction)}
+                              onClick={() => openEditModal(sub)}
                             >
-                              Edit Junction
+                              Edit Sub Office
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => openMapModal(junction)}
-                            >
+                            <DropdownMenuItem onClick={() => openMapModal(sub)}>
                               Show on Map
                             </DropdownMenuItem>
 
                             <DropdownMenuItem
                               className="text-destructive"
-                              onClick={() => handleDelete(junction.id)}
+                              onClick={() => handleDelete(sub.id)}
                             >
                               Delete
                             </DropdownMenuItem>
@@ -486,14 +480,13 @@ export default function Junctions() {
 
             {/* Mobile Card View */}
             <div className="block sm:hidden space-y-4 p-4">
-              {paginatedJunctions.map((junction) => (
-                <Card key={junction.id} className="shadow-md">
+              {paginatedSub.map((sub) => (
+                <Card key={sub.id} className="shadow-md">
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">{junction.name}</CardTitle>
+                      <CardTitle className="text-lg">{sub.name}</CardTitle>
                       <CardDescription>
-                        {junction.junction_type} •{" "}
-                        {getOfficeName(junction.office)}
+                        {sub.address} • {getOfficeName(sub.office)}
                       </CardDescription>
                     </div>
                     <DropdownMenu>
@@ -503,25 +496,18 @@ export default function Junctions() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => openViewModal(junction)}
-                        >
+                        <DropdownMenuItem onClick={() => openViewModal(sub)}>
                           View Details
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => openEditModal(junction)}
-                        >
-                          Edit Junction
+                        <DropdownMenuItem onClick={() => openEditModal(sub)}>
+                          Edit Sub Office
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => openMapModal(junction)}
-                        >
+                        <DropdownMenuItem onClick={() => openMapModal(sub)}>
                           Show on Map
                         </DropdownMenuItem>
-
                         <DropdownMenuItem
                           className="text-destructive"
-                          onClick={() => handleDelete(junction.id)}
+                          onClick={() => handleDelete(sub.id)}
                         >
                           Delete
                         </DropdownMenuItem>
@@ -531,11 +517,11 @@ export default function Junctions() {
 
                   <CardContent className="space-y-1 text-sm">
                     <p className="break-all whitespace-normal">
-                      <strong>Post Code:</strong> {junction.post_code}
+                      <strong>ID:</strong> {sub.id}
                     </p>
                     <p className="break-all whitespace-normal">
-                      <strong>Description:</strong>{" "}
-                      {junction.description || "N/A"}
+                      <strong>Created:</strong>{" "}
+                      {new Date(sub.created_at).toLocaleDateString()}
                     </p>
                   </CardContent>
                 </Card>
@@ -605,7 +591,7 @@ export default function Junctions() {
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
           <DialogHeader>
-            <DialogTitle>Edit Junction</DialogTitle>
+            <DialogTitle>Edit Sub Office</DialogTitle>
           </DialogHeader>
           {editData && (
             <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-2">
@@ -619,30 +605,11 @@ export default function Junctions() {
                 />
               </div>
               <div>
-                <Label>Junction Type</Label>
+                <Label>Address</Label>
                 <Input
-                  value={editData.junction_type}
+                  value={editData.address}
                   onChange={(e) =>
-                    setEditData({ ...editData, junction_type: e.target.value })
-                  }
-                />
-              </div>
-              <div>
-                <Label>Post Code</Label>
-                <Input
-                  value={editData.post_code}
-                  onChange={(e) =>
-                    setEditData({ ...editData, post_code: e.target.value })
-                  }
-                />
-              </div>
-
-              <div>
-                <Label>Description</Label>
-                <Input
-                  value={editData.description}
-                  onChange={(e) =>
-                    setEditData({ ...editData, description: e.target.value })
+                    setEditData({ ...editData, address: e.target.value })
                   }
                 />
               </div>
@@ -655,15 +622,15 @@ export default function Junctions() {
             <Button
               onClick={async () => {
                 try {
-                  await updateJunction(editData.id, editData);
-                  setJunctions((prev) =>
+                  await updateSub(editData.id, editData);
+                  setSub((prev) =>
                     prev.map((d) => (d.id === editData.id ? editData : d))
                   );
-                  toast.success("Junction updated successfully");
+                  toast.success("Sub Office updated successfully");
                   setIsEditOpen(false);
                 } catch (error) {
                   console.error(error);
-                  toast.error("Failed to update Junction");
+                  toast.error("Failed to update Sub Office");
                 }
               }}
             >
@@ -676,7 +643,7 @@ export default function Junctions() {
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
         <DialogContent className="max-w-lg w-[95%] sm:w-full sm:max-w-2xl mx-auto rounded-xl">
           <DialogHeader>
-            <DialogTitle>Junction Details</DialogTitle>
+            <DialogTitle>Sub Office Details</DialogTitle>
           </DialogHeader>
           {viewData && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -685,22 +652,30 @@ export default function Junctions() {
                 <p>{viewData.name || "N/A"}</p>
               </div>
               <div>
-                <strong>Junction Type:</strong>
-                <p>{viewData.junction_type || "N/A"}</p>
-              </div>
-              <div>
-                <strong>Post Code:</strong>
-                <p>{viewData.post_code || "N/A"}</p>
-              </div>
-
-              <div className="sm:col-span-2">
-                <strong>Description:</strong>
-                <p>{viewData.description || "N/A"}</p>
+                <strong>Address:</strong>
+                <p>{viewData.address || "N/A"}</p>
               </div>
               <div>
                 <strong>OLT:</strong>
-                <p>{getOfficeName(viewData.office)}</p>
+                <p>{getOfficeName(viewData.office) || "N/A"}</p>
               </div>
+              <div>
+                <strong>ID:</strong>
+                <p>{viewData.id}</p>
+              </div>
+              <div>
+                <strong>Created At:</strong>
+                <p>
+                  {viewData.created_at
+                    ? new Date(viewData.created_at).toLocaleString()
+                    : "N/A"}
+                </p>
+              </div>
+              {/* Add description field if needed in the future */}
+              {/* <div className="sm:col-span-2">
+          <strong>Description:</strong>
+          <p>{viewData.description || "N/A"}</p>
+        </div> */}
             </div>
           )}
           <DialogFooter>
@@ -730,8 +705,8 @@ export default function Junctions() {
           {mapData && (
             <MapContainer
               center={[
-                mapData?.latitude ?? officeLocation?.latitude ?? 0,
-                mapData?.longitude ?? officeLocation?.longitude ?? 0,
+                mapData.latitude ?? officeLocation?.latitude ?? 0,
+                mapData.longitude ?? officeLocation?.longitude ?? 0,
               ]}
               zoom={14}
               style={{ width: "100%", height: "100%" }}
@@ -741,16 +716,16 @@ export default function Junctions() {
                 attribution="&copy; OpenStreetMap contributors"
               />
 
-              {/* Selected Junction (highlighted) */}
-              {mapData.latitude && mapData.longitude && (
+              {/* Selected Sub-office (highlighted) */}
+              {mapData.latitude && mapData.logitude && (
                 <Marker
-                  position={[mapData.latitude, mapData.longitude]}
-                  icon={junctionIcon}
+                  position={[mapData.latitude, mapData.logitude]}
+                  icon={subOfficeIcon}
                 >
                   <Popup>
-                    <b>{mapData.name}</b>
+                    <b>{mapData.name} (Selected)</b>
                     <br />
-                    {mapData.description || "No description"}
+                    {mapData.address || "No address"}
                   </Popup>
                 </Marker>
               )}
@@ -767,20 +742,20 @@ export default function Junctions() {
                 </Marker>
               )}
 
-              {/* Other Junctions */}
-              {relatedJunctions.map(
-                (junction) =>
-                  junction.latitude &&
-                  junction.longitude && (
+              {/* Other Sub-offices */}
+              {relatedSub.map(
+                (s) =>
+                  s.latitude &&
+                  s.logitude && (
                     <Marker
-                      key={junction.id}
-                      position={[junction.latitude, junction.longitude]}
-                      icon={junctionIcon}
+                      key={s.id}
+                      position={[s.latitude, s.logitude]}
+                      icon={subOfficeIcon}
                     >
                       <Popup>
-                        <b>{junction.name}</b>
+                        <b>{s.name}</b>
                         <br />
-                        {junction.description || "No description"}
+                        {s.address || "No address"}
                       </Popup>
                     </Marker>
                   )
@@ -826,20 +801,19 @@ export default function Junctions() {
                   )
               )}
 
-              {/* Sub-Offices */}
-              {subOffices.map(
-                (sub) =>
-                  sub.latitude &&
-                  sub.logitude && (
+              {/* Junctions Markers */}
+              {relatedJunctions.map(
+                (junction) =>
+                  junction.latitude &&
+                  junction.longitude && (
                     <Marker
-                      key={sub.id}
-                      position={[sub.latitude, sub.logitude]}
-                      icon={subOfficeIcon}
+                      key={junction.id}
+                      position={[junction.latitude, junction.longitude]}
+                      icon={junctionIcon}
                     >
                       <Popup>
-                        <b>{sub.name}</b>
-                        <br />
-                        {sub.address || "No address"}
+                        <b>{junction.name}</b> <br />
+                        {junction.description || "No description"}
                       </Popup>
                     </Marker>
                   )
