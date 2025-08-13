@@ -14,8 +14,12 @@ import {
   LayoutDashboard,
   Map,
   Router,
+  UserCog,
+  GitBranch,
   Users,
   CreditCard,
+  Building2,
+  Server,
   Package,
   FileText,
   Settings,
@@ -38,17 +42,17 @@ const menuItems = [
   {
     title: "OLT",
     url: "/add",
-    icon: Router,
+    icon: Server,
   },
   {
     title: "Sub Offices",
     url: "/sub",
-    icon: Router,
+    icon: Building2,
   },
   {
     title: "Junctions",
     url: "/junctions",
-    icon: Router,
+    icon: GitBranch,
   },
   {
     title: "Devices",
@@ -63,7 +67,7 @@ const menuItems = [
   {
     title: "Staffs",
     url: "/staff",
-    icon: Users,
+    icon: UserCog,
   },
   {
     title: "Payments",
@@ -87,23 +91,36 @@ export function NetworkSidebar() {
   const collapsed = state === "collapsed";
 
   return (
-    <Sidebar className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}>
-      <SidebarHeader className="p-4">
+    <Sidebar
+      className={`${collapsed ? "w-14" : "w-64"} transition-all duration-300`}
+    >
+      <SidebarHeader className="">
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center shadow-glow">
+          {/* <div className="relative">
+            <div className="w-8 h-8  rounded-lg flex items-center justify-center shadow-glow">
               <Activity className="w-4 h-4 text-primary-foreground" />
+
             </div>
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-pulse"></div>
-          </div>
+          </div> */}
           {!collapsed && (
             <div>
-              <h1 className="font-bold text-lg text-sidebar-foreground">
+              {/* <h1 className="font-bold text-lg text-sidebar-foreground">
                 NetworkCommand
               </h1>
               <p className="text-xs text-sidebar-foreground/70">
                 Optical Network Center
-              </p>
+              </p> */}
+              <div
+                className=""
+                style={{ height: "80px", width: "150px", objectFit: "contain" }}
+              >
+                <img
+                  src="./ChatGPT Image Aug 9, 2025, 12_20_25 PM23 (1).png"
+                  alt="Logo"
+                  style={{ maxHeight: "100%", width: "100%" }} // adjust 40px to your liking
+                />
+              </div>
             </div>
           )}
         </div>
@@ -129,7 +146,9 @@ export function NetworkSidebar() {
                         }`
                       }
                     >
-                      <item.icon className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`} />
+                      <item.icon
+                        className={`w-4 h-4 ${collapsed ? "mx-auto" : ""}`}
+                      />
                       {!collapsed && (
                         <span className="font-medium">{item.title}</span>
                       )}

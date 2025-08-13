@@ -14,6 +14,15 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+import { useEffect, useState } from "react";
+import {
+  fetchAllCustomers,
+  fetchDevices,
+  fetchJunctions,
+  fetchOffices,
+  fetchSub,
+  fetchStaffs,
+} from "@/services/api";
 
 const revenueData = [
   { month: "Jan", revenue: 32000, customers: 2400 },
@@ -22,13 +31,6 @@ const revenueData = [
   { month: "Apr", revenue: 42000, customers: 2750 },
   { month: "May", revenue: 45000, customers: 2800 },
   { month: "Jun", revenue: 47238, customers: 2847 },
-];
-
-const deviceData = [
-  { name: "Switches", value: 45, color: "hsl(217, 91%, 35%)" },
-  { name: "Routers", value: 25, color: "hsl(200, 98%, 39%)" },
-  { name: "Splitters", value: 20, color: "hsl(142, 71%, 45%)" },
-  { name: "Offices", value: 10, color: "hsl(38, 92%, 50%)" },
 ];
 
 const networkHealth = [
@@ -41,6 +43,62 @@ const networkHealth = [
 ];
 
 export function NetworkChart() {
+  const [entityData, setEntityData] = useState([
+    { name: "Customers", value: 0, color: "hsl(217, 91%, 35%)" },
+    { name: "Staffs", value: 0, color: "hsl(200, 98%, 39%)" },
+    { name: "Devices", value: 0, color: "hsl(142, 71%, 45%)" },
+    { name: "Junctions", value: 0, color: "hsl(38, 92%, 50%)" },
+    { name: "Sub Offices", value: 0, color: "hsl(280, 65%, 60%)" },
+    { name: "OLT", value: 0, color: "hsl(12, 88%, 60%)" },
+  ]);
+
+  useEffect(() => {
+    const normalizeCount = (res: any): number => {
+      if (Array.isArray(res)) return res.length;
+      if (res && typeof res === "object") {
+        if (Array.isArray((res as any).results)) return (res as any).results.length;
+        if (typeof (res as any).count === "number") return (res as any).count;
+        if (Array.isArray((res as any).data)) return (res as any).data.length;
+      }
+      return 0;
+    };
+
+    const load = async () => {
+      try {
+        const [customersRes, devicesRes, junctionsRes, officesRes, subRes, staffsRes] =
+          await Promise.all([
+            fetchAllCustomers(),
+            fetchDevices(),
+            fetchJunctions(),
+            fetchOffices(),
+            fetchSub(),
+            fetchStaffs(),
+          ]);
+
+        const customers = Array.isArray(customersRes) ? customersRes.length : normalizeCount(customersRes);
+        const devices = normalizeCount(devicesRes);
+        const junctions = normalizeCount(junctionsRes);
+        const offices = normalizeCount(officesRes);
+        const subOffices = normalizeCount(subRes);
+        const staffs = Array.isArray(staffsRes) ? staffsRes.length : normalizeCount(staffsRes);
+
+        setEntityData([
+          { name: "Customers", value: customers, color: "hsl(217, 91%, 35%)" },
+          { name: "Staffs", value: staffs, color: "hsl(200, 98%, 39%)" },
+          { name: "Devices", value: devices, color: "hsl(142, 71%, 45%)" },
+          { name: "Junctions", value: junctions, color: "hsl(38, 92%, 50%)" },
+          { name: "Sub Offices", value: subOffices, color: "hsl(280, 65%, 60%)" },
+          { name: "OLT", value: offices, color: "hsl(12, 88%, 60%)" },
+        ]);
+      } catch (e) {
+        // leave defaults if fetch fails
+        console.error("Failed to load entity distribution", e);
+      }
+    };
+
+    load();
+  }, []);
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
       {/* Revenue Chart */}
@@ -81,16 +139,16 @@ export function NetworkChart() {
         </CardContent>
       </Card>
 
-      {/* Device Distribution */}
+      {/* Network Entities Distribution */}
       <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold">Device Distribution</CardTitle>
+          <CardTitle className="text-lg font-semibold">Network Entities</CardTitle>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
               <Pie
-                data={deviceData}
+                data={entityData}
                 cx="50%"
                 cy="50%"
                 innerRadius={60}
@@ -98,7 +156,7 @@ export function NetworkChart() {
                 dataKey="value"
                 strokeWidth={2}
               >
-                {deviceData.map((entry, index) => (
+                {entityData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
               </Pie>
@@ -108,11 +166,12 @@ export function NetworkChart() {
                   border: "1px solid hsl(var(--border))",
                   borderRadius: "8px",
                 }}
+                formatter={(value: any, name: any) => [value, name]}
               />
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-2 mt-4">
-            {deviceData.map((item) => (
+            {entityData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div
                   className="w-3 h-3 rounded-full"

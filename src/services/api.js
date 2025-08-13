@@ -1,5 +1,6 @@
 // src/services/api.js
 import axios from "axios";
+import { recordActivity, getCurrentUserKey } from "./activityLog";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL, 
@@ -7,6 +8,57 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Attach interceptor to record mutating activities
+api.interceptors.response.use(
+  (response) => {
+    try {
+      const method = (response.config?.method || "").toLowerCase();
+      if (method === "post" || method === "put" || method === "delete") {
+        const url = String(response.config?.url || "");
+        const action = method === "post" ? "created" : method === "put" ? "updated" : "deleted";
+
+        const resource = inferResource(url);
+        const title = `${capitalize(resource)} ${action}`;
+        const description = `A ${resource} was ${action}.`;
+
+        const userKey = getCurrentUserKey();
+        const name = localStorage.getItem("authName") || "System";
+
+        recordActivity(
+          {
+            type: resource,
+            action,
+            title,
+            description,
+            user: name,
+          },
+          userKey
+        );
+      }
+    } catch {
+      // non-blocking
+    }
+    return response;
+  },
+  (error) => Promise.reject(error)
+);
+
+function inferResource(url) {
+  if (url.includes("/network-device/networkdevice")) return "device";
+  if (url.includes("/customer/")) return "customer";
+  if (url.includes("/junction/")) return "junction";
+  if (url.includes("/office/branch")) return "sub office";
+  if (url.includes("/office/")) return "OLT";
+  if (url.includes("/route/")) return "route";
+  if (url.includes("/opticalfiber/company/staffs")) return "staff";
+  return "item";
+}
+
+function capitalize(s) {
+  if (!s) return "";
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
 
 // REGISTER COMPANY + ADMIN
 export const registerCompanyAdmin = async (payload) => {

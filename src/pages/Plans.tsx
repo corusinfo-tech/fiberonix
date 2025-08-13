@@ -1,65 +1,162 @@
 import { NetworkLayout } from "@/components/NetworkLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import "./plans.css";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, MoreVertical, Package, Users, DollarSign, Zap, Wifi, TrendingUp } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Package,
+  Users,
+  DollarSign,
+  Zap,
+  Wifi,
+  TrendingUp,
+  Globe,
+  Map,
+  Route,
+  Navigation
+} from "lucide-react";
+
+// const plans = [
+
+//   {
+//     id: "PLAN-001",
+//     name: "Basic Fiber",
+//     description: "Perfect for light internet usage",
+//     speed: "100 Mbps",
+//     price: 39.99,
+//     period: "month",
+//     customers: 324,
+//     status: "active",
+//     features: ["Unlimited Data", "24/7 Support", "Basic Installation"]
+//   },
+//   {
+//     id: "PLAN-002",
+//     name: "Premium Fiber",
+//     description: "Great for families and remote work",
+//     speed: "500 Mbps",
+//     price: 79.99,
+//     period: "month",
+//     customers: 567,
+//     status: "active",
+//     features: ["Unlimited Data", "Priority Support", "Free Installation", "WiFi Router Included"]
+//   },
+//   {
+//     id: "PLAN-003",
+//     name: "Enterprise Fiber",
+//     description: "Maximum performance for businesses",
+//     speed: "1 Gbps",
+//     price: 149.99,
+//     period: "month",
+//     customers: 89,
+//     status: "active",
+//     features: ["Unlimited Data", "Dedicated Support", "SLA Guarantee", "Static IP", "Backup Connection"]
+//   },
+//   {
+//     id: "PLAN-004",
+//     name: "Student Special",
+//     description: "Discounted plan for students",
+//     speed: "200 Mbps",
+//     price: 24.99,
+//     period: "month",
+//     customers: 156,
+//     status: "limited",
+//     features: ["Unlimited Data", "Student Verification Required", "Basic Support"]
+//   }
+// ];
 
 const plans = [
   {
-    id: "PLAN-001",
-    name: "Basic Fiber",
-    description: "Perfect for light internet usage",
-    speed: "100 Mbps",
-    price: 39.99,
+    id: 1,
+    icon: Globe,
+    name: "Free Plan",
+    description: "Perfect for small projects and getting started",
+    speed: "Free",
+    price: 0,
     period: "month",
-    customers: 324,
-    status: "active",
-    features: ["Unlimited Data", "24/7 Support", "Basic Installation"]
+    used: 350,
+    limit: 500,
+    features: [
+      "Basic route mapping",
+      "Up to 500 KM tracking",
+      "Standard support",
+    ],
+    theme: "plan-green",
   },
   {
-    id: "PLAN-002", 
-    name: "Premium Fiber",
-    description: "Great for families and remote work",
-    speed: "500 Mbps",
-    price: 79.99,
+    id: 2,
+    icon: Map,
+    name: "100 KM Plan",
+    description: "Ideal for small to medium network projects",
+    speed: "100 KM",
+    price: 999,
     period: "month",
-    customers: 567,
-    status: "active",
-    features: ["Unlimited Data", "Priority Support", "Free Installation", "WiFi Router Included"]
+    used: 7000,
+    limit: 11000,
+    features: ["Advanced mapping tools", "Up to 10000 KM", "Standard support"],
+    theme: "plan-blue",
   },
   {
-    id: "PLAN-003",
-    name: "Enterprise Fiber",
-    description: "Maximum performance for businesses",
-    speed: "1 Gbps",
-    price: 149.99,
+    id: 3,
+    icon: Route,
+    name: "500 KM Plan",
+    description: "Great for expanding networks",
+    speed: "500 KM",
+    price: 3999,
     period: "month",
-    customers: 89,
-    status: "active", 
-    features: ["Unlimited Data", "Dedicated Support", "SLA Guarantee", "Static IP", "Backup Connection"]
+    used: 7000,
+    limit: 11000,
+    features: ["Advanced mapping tools", "Up to 10000 KM", "Standard support"],
+    theme: "plan-orange",
   },
   {
-    id: "PLAN-004",
-    name: "Student Special",
-    description: "Discounted plan for students",
-    speed: "200 Mbps",
-    price: 24.99,
+    id: 4,
+    icon: Navigation,
+    name: "1000 KM Plan",
+    description: "Best for large network projects",
+    speed: "1000 KM",
+    price: 7999,
     period: "month",
-    customers: 156,
-    status: "limited",
-    features: ["Unlimited Data", "Student Verification Required", "Basic Support"]
-  }
+    used: 7000,
+    limit: 11000,
+    features: ["Advanced mapping tools", "Up to 10000 KM", "Premium support"],
+    theme: "plan-red",
+  },
 ];
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "active": return "bg-success text-success-foreground";
-    case "limited": return "bg-warning text-warning-foreground";
-    case "inactive": return "bg-destructive text-destructive-foreground";
-    default: return "bg-muted text-muted-foreground";
+    case "active":
+      return "bg-success text-success-foreground";
+    case "limited":
+      return "bg-warning text-warning-foreground";
+    case "inactive":
+      return "bg-destructive text-destructive-foreground";
+    default:
+      return "bg-muted text-muted-foreground";
   }
 };
 
@@ -73,7 +170,7 @@ export default function Plans() {
   return (
     <NetworkLayout>
       <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        {/* <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Plan Management</h1>
             <p className="text-muted-foreground text-sm sm:text-base">Create and manage service plans</p>
@@ -124,78 +221,89 @@ export default function Plans() {
               <p className="text-xs text-muted-foreground">567 subscribers</p>
             </CardContent>
           </Card>
-        </div>
+        </div> */}
 
         {/* Plan Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {plans.map((plan) => {
-            const SpeedIcon = getSpeedIcon(plan.speed);
-            return (
-              <Card key={plan.id} className="shadow-elegant backdrop-blur-sm bg-card/95 hover:shadow-glow transition-all duration-300">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <SpeedIcon className="w-5 h-5 text-primary" />
-                    </div>
-                    <Badge className={getStatusColor(plan.status)}>
-                      {plan.status}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-xl">{plan.name}</CardTitle>
-                  <CardDescription>{plan.description}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">${plan.price}</div>
-                      <div className="text-sm text-muted-foreground">per {plan.period}</div>
-                      <div className="text-lg font-semibold mt-2">{plan.speed}</div>
-                    </div>
-                    
-                    <div className="flex items-center justify-center space-x-4 text-sm">
-                      <div className="flex items-center">
-                        <Users className="w-4 h-4 mr-1 text-muted-foreground" />
-                        {plan.customers} customers
-                      </div>
-                    </div>
+          {plans.map((plan) => (
+            <div
+              key={plan.id}
+              className={`flex flex-col justify-between p-6 rounded-2xl border border-gray-200 shadow-md hover:shadow-lg transition-all duration-300 ${plan.theme}`}
+            >
+              {/* Icon */}
+              <div className="icon-box flex justify-center items-center w-10 h-10 rounded-lg mb-4">
+                <plan.icon className="w-6 h-6" />
+              </div>
 
-                    <div className="space-y-2">
-                      {plan.features.slice(0, 3).map((feature, index) => (
-                        <div key={index} className="text-xs text-muted-foreground flex items-center">
-                          <div className="w-1 h-1 bg-primary rounded-full mr-2"></div>
-                          {feature}
-                        </div>
-                      ))}
-                    </div>
+              {/* Title & Description */}
+              <h3 className="text-lg font-semibold">{plan.name}</h3>
+              <p className="text-sm text-gray-500 mb-4">{plan.description}</p>
 
-                    <Button variant="outline" size="sm" className="w-full">
-                      View Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+              {/* Price */}
+              <div className="text-2xl font-bold">
+                ₹{plan.price}
+                <span className="text-sm font-normal text-gray-500">
+                  {" "}
+                  / {plan.period}
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mt-2">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>
+                    {plan.used} / {plan.limit} KM
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="progress-bar h-2 rounded-full"
+                    style={{ width: `${(plan.used / plan.limit) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* Features */}
+              <ul className="mt-4 space-y-1 text-sm text-gray-700">
+                {plan.features.map((feature, index) => (
+                  <li key={index} className="flex items-center">
+                    <span className="text-green-500 mr-2">✔</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              {/* Button */}
+              <button className="select-btn mt-6 w-full text-white py-2 rounded-lg">
+                Select Plan
+              </button>
+            </div>
+          ))}
         </div>
 
         {/* Plan Table */}
-        <Card className="shadow-elegant backdrop-blur-sm bg-card/95">
+        {/* <Card className="shadow-elegant backdrop-blur-sm bg-card/95">
           <CardHeader>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <CardTitle>Plan Overview</CardTitle>
-                <CardDescription>Detailed view of all service plans</CardDescription>
+                <CardDescription>
+                  Detailed view of all service plans
+                </CardDescription>
               </div>
               <div className="flex items-center space-x-2 w-full sm:w-auto">
                 <div className="relative w-full sm:w-64">
                   <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input placeholder="Search plans..." className="pl-8 w-full sm:w-64" />
+                  <Input
+                    placeholder="Search plans..."
+                    className="pl-8 w-full sm:w-64"
+                  />
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {/* Desktop/tablet table */}
+            
             <div className="hidden sm:block w-full overflow-x-auto">
               <Table className="min-w-[900px]">
                 <TableHeader>
@@ -222,7 +330,9 @@ export default function Plans() {
                             </div>
                             <div>
                               <div className="font-medium">{plan.name}</div>
-                              <div className="text-sm text-muted-foreground">{plan.id}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {plan.id}
+                              </div>
                             </div>
                           </div>
                         </TableCell>
@@ -242,7 +352,9 @@ export default function Plans() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-semibold">${revenue.toLocaleString()}/mo</div>
+                          <div className="font-semibold">
+                            ${revenue.toLocaleString()}/mo
+                          </div>
                         </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(plan.status)}>
@@ -258,10 +370,16 @@ export default function Plans() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>Edit Plan</DropdownMenuItem>
-                              <DropdownMenuItem>View Customers</DropdownMenuItem>
-                              <DropdownMenuItem>Duplicate Plan</DropdownMenuItem>
+                              <DropdownMenuItem>
+                                View Customers
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                Duplicate Plan
+                              </DropdownMenuItem>
                               <DropdownMenuItem>Export Data</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">
+                                Deactivate
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -271,20 +389,25 @@ export default function Plans() {
                 </TableBody>
               </Table>
             </div>
-            {/* Mobile cards */}
+            
             <div className="sm:hidden flex flex-col space-y-4 p-2">
               {plans.map((plan) => {
                 const SpeedIcon = getSpeedIcon(plan.speed);
                 const revenue = plan.customers * plan.price;
                 return (
-                  <div key={plan.id} className="bg-muted/30 rounded-xl p-4 shadow-sm">
+                  <div
+                    key={plan.id}
+                    className="bg-muted/30 rounded-xl p-4 shadow-sm"
+                  >
                     <div className="flex items-center space-x-3 mb-2">
                       <div className="p-2 bg-primary/10 rounded-lg">
                         <SpeedIcon className="w-5 h-5 text-primary" />
                       </div>
                       <div>
                         <div className="font-semibold">{plan.name}</div>
-                        <div className="text-xs text-muted-foreground">{plan.id}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {plan.id}
+                        </div>
                       </div>
                     </div>
                     <div className="text-sm">
@@ -301,7 +424,10 @@ export default function Plans() {
                         <strong>Revenue:</strong> ${revenue.toLocaleString()}/mo
                       </div>
                       <div>
-                        <strong>Status:</strong> <Badge className={getStatusColor(plan.status)}>{plan.status}</Badge>
+                        <strong>Status:</strong>{" "}
+                        <Badge className={getStatusColor(plan.status)}>
+                          {plan.status}
+                        </Badge>
                       </div>
                     </div>
                     <div className="mt-2 flex justify-end">
@@ -316,7 +442,9 @@ export default function Plans() {
                           <DropdownMenuItem>View Customers</DropdownMenuItem>
                           <DropdownMenuItem>Duplicate Plan</DropdownMenuItem>
                           <DropdownMenuItem>Export Data</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Deactivate</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive">
+                            Deactivate
+                          </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -325,7 +453,7 @@ export default function Plans() {
               })}
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
     </NetworkLayout>
   );

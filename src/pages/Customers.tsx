@@ -360,10 +360,10 @@ export default function Customers() {
               Manage customer accounts
             </p>
           </div>
-          <Button className="bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow w-full sm:w-auto">
+          {/* <Button className="bg-gradient-primary hover:opacity-90 text-primary-foreground shadow-glow w-full sm:w-auto">
             <Plus className="w-4 h-4 mr-2" />
             Add Customer
-          </Button>
+          </Button> */}
         </div>
 
         {/* Filters */}
