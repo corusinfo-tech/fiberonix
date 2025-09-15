@@ -84,7 +84,7 @@ export default function HomePage() {
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
                     <a
-                      href="https://gopi333888.github.io/outline-kerala-news-app-apk/"
+                      href="https://github.com/AmmuVijayan2001/fibronics/releases/download/v1.0.0/app-release.apk"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="fw-bold text-primary text-decoration-none"
@@ -191,7 +191,7 @@ export default function HomePage() {
                 </p>
                 <div className="flex flex-col sm:flex-row gap-6 justify-center">
                   <a
-                    href="https://gopi333888.github.io/outline-kerala-news-app-apk/"
+                    href="https://github.com/AmmuVijayan2001/fibronics/releases/download/v1.0.0/app-release.apk"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="fw-bold text-primary text-decoration-none"
