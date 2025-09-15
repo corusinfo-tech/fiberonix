@@ -1,7 +1,7 @@
 "use client";
 
 import { NetworkLayout } from "@/components/NetworkLayout";
-import "./plans.css";
+import "./Plans.css";
 import { useEffect, useState } from "react";
 import { Globe, Map, Route, Navigation } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
