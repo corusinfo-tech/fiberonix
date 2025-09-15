@@ -2,8 +2,7 @@ import { TopbarLayout } from "@/components/TopbarLayout";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import toast, { Toaster } from "react-hot-toast";
-import { Router, Users, Share2, Server, ArrowRight  } from "lucide-react";
-
+import { Router, Users, Share2, Server, ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -84,12 +83,20 @@ export default function HomePage() {
                     </p>
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <button
-                      className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-2xl text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
-                      onClick={() => navigate("/download")}
+                    <a
+                      href="https://gopi333888.github.io/outline-kerala-news-app-apk/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="fw-bold text-primary text-decoration-none"
+                      style={{ letterSpacing: "0.01em" }}
                     >
-                      Download App
-                    </button>
+                      <button
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-2xl text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
+                        onClick={() => navigate("/download")}
+                      >
+                        Download App
+                      </button>
+                    </a>
                     <button
                       className="border-2 border-primary text-primary hover:bg-primary/10 px-8 py-4 rounded-2xl text-lg font-semibold transition-all"
                       onClick={handleDashboardClick}
@@ -131,37 +138,44 @@ export default function HomePage() {
 
           {/* Features Section */}
           <section id="features" className="py-20 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-foreground mb-4">
-            Powerful Network Management Features
-          </h2>
-          <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-            Everything you need to monitor, manage, and optimize your fiber optic network infrastructure
-          </p>
-        </div>
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {features.map((feature, index) => (
-            <div
-              key={index}
-              onClick={() => navigate(feature.link)}
-              className="cursor-pointer bg-card p-8 rounded-2xl border border-border hover:shadow-xl transition-all transform hover:-translate-y-2 group"
-            >
-              <div className={`w-16 h-16 mb-6 flex items-center justify-center rounded-xl ${feature.bg}`}>
-                {feature.icon}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                <h2 className="text-4xl font-bold text-foreground mb-4">
+                  Powerful Network Management Features
+                </h2>
+                <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                  Everything you need to monitor, manage, and optimize your
+                  fiber optic network infrastructure
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-foreground mb-3">{feature.title}</h3>
-              <p className="text-muted-foreground mb-6">{feature.description}</p>
-              <div className="flex items-center text-primary font-semibold group-hover:underline">
-                <span>Go to {feature.title}</span>
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {features.map((feature, index) => (
+                  <div
+                    key={index}
+                    onClick={() => navigate(feature.link)}
+                    className="cursor-pointer bg-card p-8 rounded-2xl border border-border hover:shadow-xl transition-all transform hover:-translate-y-2 group"
+                  >
+                    <div
+                      className={`w-16 h-16 mb-6 flex items-center justify-center rounded-xl ${feature.bg}`}
+                    >
+                      {feature.icon}
+                    </div>
+                    <h3 className="text-xl font-bold text-foreground mb-3">
+                      {feature.title}
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {feature.description}
+                    </p>
+                    <div className="flex items-center text-primary font-semibold group-hover:underline">
+                      <span>Go to {feature.title}</span>
+                      <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
+          </section>
 
           {/* Final CTA Section */}
           <section className="py-20 bg-gradient-primary relative overflow-hidden">
@@ -176,12 +190,20 @@ export default function HomePage() {
                   the future of fiber network monitoring.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                  <button
-                    className="bg-white hover:bg-gray-50 text-primary px-10 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 shadow-xl whitespace-nowrap cursor-pointer"
-                    onClick={() => navigate("/download")}
+                  <a
+                    href="https://gopi333888.github.io/outline-kerala-news-app-apk/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="fw-bold text-primary text-decoration-none"
+                    style={{ letterSpacing: "0.01em" }}
                   >
-                    Download App
-                  </button>
+                    <button
+                      className="bg-white hover:bg-gray-50 text-primary px-10 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 shadow-xl whitespace-nowrap cursor-pointer"
+                      onClick={() => navigate("/download")}
+                    >
+                      Download App
+                    </button>
+                  </a>
                   <button
                     className="border-2 border-white text-white hover:bg-white/10 px-10 py-4 rounded-xl text-lg font-bold transition-all whitespace-nowrap cursor-pointer"
                     onClick={handleDashboardClick}
