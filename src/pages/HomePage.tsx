@@ -92,7 +92,7 @@ export default function HomePage() {
                     >
                       <button
                         className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-2xl text-lg font-semibold transition-all transform hover:scale-105 shadow-lg"
-                        onClick={() => navigate("/download")}
+                        
                       >
                         Download App
                       </button>
@@ -199,7 +199,7 @@ export default function HomePage() {
                   >
                     <button
                       className="bg-white hover:bg-gray-50 text-primary px-10 py-4 rounded-xl text-lg font-bold transition-all transform hover:scale-105 shadow-xl whitespace-nowrap cursor-pointer"
-                      onClick={() => navigate("/download")}
+                      
                     >
                       Download App
                     </button>
